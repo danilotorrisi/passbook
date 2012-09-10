@@ -57,7 +57,13 @@ module Passbook
 
         @files.each do |file|
           if file.class == Hash
-            sha1s[file[:name]] = Digest::SHA1.hexdigest file[:content]
+            if file.has_key? :content
+              sha1s[file[:name]] = Digest::SHA1.hexdigest file[:content]
+            elsif file.has_key? :path
+              sha1s[file[:name]] = Digest::SHA1.file(file[:path]).hexdigest
+            else
+              raise "Format Not Valid"
+            end
           else
             sha1s[File.basename(file)] = Digest::SHA1.file(file).hexdigest
           end
@@ -93,7 +99,11 @@ module Passbook
           @files.each do |file|
             if file.class == Hash
               z.put_next_entry file[:name]
-              z.print file[:content]
+              if file.has_key? :content
+                z.print file[:content]
+              else
+                z.print IO.read(file[:path])
+              end
             else
               z.put_next_entry File.basename(file)
               z.print IO.read(file)
